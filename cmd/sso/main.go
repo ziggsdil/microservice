@@ -27,9 +27,6 @@ func main() {
 	application := app.New(log, cfg.GRPC.Port, cfg.StoragePath, cfg.TokenTTL)
 
 	go application.GRPCServer.MustRun()
-	// TODO: инициализировать приложение (app)
-
-	// TODO: запустить gRPC-сервер приложения
 
 	// Graceful shutdown
 	stop := make(chan os.Signal, 1)

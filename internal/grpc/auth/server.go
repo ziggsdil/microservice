@@ -2,7 +2,10 @@ package auth
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"github.com/ziggsdil/microservice/internal/services/auth"
+	"github.com/ziggsdil/microservice/internal/storage"
 	ssov1 "github.com/ziggsdil/protos/gen/go/sso"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -36,6 +39,10 @@ func (s *serverAPI) Login(ctx context.Context, req *ssov1.LoginRequest) (*ssov1.
 	// TODO: call auth service
 	token, err := s.auth.Login(ctx, req.GetEmail(), req.GetPassword(), int(req.GetAppId()))
 	if err != nil {
+		if errors.Is(err, auth.ErrInvalidCredentials) {
+			return nil, status.Error(codes.InvalidArgument, "invalid credentials")
+		}
+
 		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to login: %v", err))
 	}
 
@@ -51,6 +58,10 @@ func (s *serverAPI) Register(ctx context.Context, req *ssov1.RegisterRequest) (*
 
 	userID, err := s.auth.RegisterNewUser(ctx, req.GetEmail(), req.GetPassword())
 	if err != nil {
+		if errors.Is(err, auth.ErrUserExists) {
+			return nil, status.Error(codes.AlreadyExists, "user already exists")
+		}
+
 		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to register: %v", err))
 	}
 
@@ -67,6 +78,10 @@ func (s *serverAPI) IsAdmin(ctx context.Context, req *ssov1.IsAdminRequest) (*ss
 	// TODO: call auth service
 	isAdmin, err := s.auth.IsAdmin(ctx, req.GetUserId())
 	if err != nil {
+		if errors.Is(err, storage.ErrUserNotFound) {
+			return nil, status.Error(codes.InvalidArgument, "user not found")
+		}
+
 		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to check if user is admin: %v", err))
 	}
 	return &ssov1.IsAdminResponse{IsAdmin: isAdmin}, nil
